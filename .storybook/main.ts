@@ -27,7 +27,15 @@ const config: StorybookConfig = {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '../src'), // @/styles/xxx.module.scss 같은 경로 사용
+          // @/styles/xxx.module.scss 같은 경로 사용
+          '@': path.resolve(__dirname, '../src'),
+        },
+      },
+      server: {
+        // 파일변경 감지
+        watch: {
+          usePolling: true, // 🔁 변경 감지 방식 변경
+          interval: 1000, // 🔁 감지 주기 1초
         },
       },
     });
