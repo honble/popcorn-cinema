@@ -8,7 +8,31 @@
   "settings": {
     "terminal.integrated.defaultProfile.linux": "bash"
   },
-  "extensions": [],
+  "extensions": [
+    // **코드 포맷터 & 린터**
+    "esbenp.prettier-vscode", // Prettier 포맷터
+    "dbaeumer.vscode-eslint", // ESLint 린터
+
+    // **Git 관련**
+    "eamodio.gitlens", // GitLens로 히스토리·라인별 변경 내역 보기
+    "GitHub.vscode-pull-request-github", // GitHub PR 연동
+
+    // **Docker 지원**
+    "ms-azuretools.vscode-docker", // Dockerfile/Compose 지원 및 컨테이너 관리
+
+    // **편의성 & 생산성**
+    "oderwat.indent-rainbow", // 들여쓰기 컬러 표시
+    "christian-kohler.path-intellisense", // 파일 경로 자동 완성
+    "christian-kohler.npm-intellisense", // npm 모듈 자동 완성
+    "formulahendry.auto-rename-tag", // HTML/XML 태그 자동 변경
+    "formulahendry.auto-close-tag", // 닫는 태그 자동 완성
+    "ms-vscode.vscode-typescript-tslint-plugin", // TypeScript TSLint 플러그인
+    "chamboug.js-auto-backticks", //문자열을 자동으로 백틱(`)으로 감싸주는 기능
+    "Prisma.prisma",
+
+    // **UI/테마**
+    "KacperBiedka.one-candy-dark" // One Candy Dark 테마
+  ],
   "forwardPorts": [3000],
   "postCreateCommand": "npm install",
   "remoteUser": "node",
