@@ -1,11 +1,13 @@
 // src/lib/kobis.ts
 
+import { getLastSundayYMD, getYesterdayYMD } from '@/utils/date';
 import { PosterInfo, fetchPosterInfo } from './tmdb';
 
 // KOBIS 영화 ID 데이터 타입
 export interface Movie {
   movieCd: string; // 영화 고유 코드
   movieNm: string; // 영화 제목
+  multiMovieYn : string // 다양성 영화 'Y', 상업 옇화 'N'
 }
 
 // KOBIS 영화 정보 데이터 타입 (openDt 포함)
@@ -15,7 +17,22 @@ export interface MovieList extends Movie {
   posterInfo?: PosterInfo; // TMDB 포스터 및 개요 정보
 }
 
-// KOBIS 영화 상세 정보 데이터 타입
+// KOBIS 영화 상세 정보 원시 데이터 타입
+type Named<T extends string> = {[k in `${T}Nm`]: string}
+type Genre = Named<'genre'>;
+type Director = Named<'people'>;
+type Actor = Named<'people'>;
+
+export interface RawMovieDetail extends Movie {
+  prdtYear: string;
+  showTm: string;
+  genres: Genre[];
+  directors: Director[];
+  actors: Actor[];
+  posterInfo: PosterInfo; 
+}
+
+// KOBIS 영화 상세 정보 가공 데이터 타입
 export interface MovieDetail extends Movie {
   prdtYear: string;
   showTm: string;
@@ -37,22 +54,6 @@ function buildKobisUrl(
   // e.g. https://www.kobis.or.kr/kobisopenapi/webservice/rest/movie/searchMovieInfo.json?key=YOUR_API_KEY&movieCd=20212345
 }
 
-// 전체 박스오피스
-const urlAll = buildKobisUrl('boxoffice/searchDailyBoxOfficeList.json', {
-  targetDt: '20250610',
-});
-
-// 다양성 영화만
-const urlDiv = buildKobisUrl('boxoffice/searchDailyBoxOfficeList.json', {
-  targetDt: '20250610',
-  multiMovieYn: 'Y',
-});
-
-// 상업 영화만
-const urlComm = buildKobisUrl('boxoffice/searchDailyBoxOfficeList.json', {
-  targetDt: '20250610',
-  multiMovieYn: 'N',
-});
 
 // KOBIS 박스오피스 리스트 공통 호출
 async function fetchBoxofficeList(
@@ -80,4 +81,73 @@ export async function fetchBoxOffice(
 ): Promise<MovieList[]> {
   let endpoint: string;
   let params: Record<string, string>;
+
+  switch (category) {
+    case 'daily':
+      endpoint = 'boxoffice/searchDailyBoxOfficeList.json';
+      params = { targetDt: targetDt ?? getYesterdayYMD() };
+      break;
+    case 'weekly':
+      endpoint = 'boxoffice/searchWeeklyBoxOfficeList.json';
+      params = { targetDt: targetDt ?? getLastSundayYMD(), weekGb: '0' };
+      break;
+    case 'weekend':
+      endpoint = 'boxoffice/searchWeeklyBoxOfficeList.json';
+      params = { targetDt: targetDt ?? getLastSundayYMD(), weekGb: '1' };
+      break;
+  }
+
+  const list = await fetchBoxofficeList(endpoint, params);
+  const diversityMovies = list.filter(item => item.multiMovieYn === 'Y'); // 다양성 영화 필터링
+  return Promise.all(
+    diversityMovies.map(async(item) => {
+      const year = item.openDt?.slice(0, 4) ?? '';
+      const posterInfo = await fetchPosterInfo(item.movieNm, year);
+      return {
+        ...item,
+        posterInfo,
+      }
+    })
+  )
 }
+
+// KOBIS 영화 상세정보 호출
+export async function fetchMovieDetail(movieCd: string): Promise<MovieDetail> {
+  const endpoint = 'movie/searchMovieInfo.json';
+  const url = buildKobisUrl(endpoint, { movieCd }).replace(/\s+/g, '');
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) {
+    console.error('[fetchMovieDetail] 응답 바디 →', await res.text());
+    throw new Error(`KOBIS API error: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const info: RawMovieDetail = json.movieInfoResult.movieInfo;
+  const genres = info.genres.map(g => g.genreNm);
+  const directors = info.directors.map(d => d.peopleNm);
+  const actors = info.actors.map(a => a.peopleNm);
+  const posterInfo = await fetchPosterInfo(info.movieNm); // 상세페이지에서는 개봉연도 제외
+
+  return {
+    movieCd: info.movieCd,
+    movieNm: info.movieNm,
+    prdtYear: info.prdtYear,
+    showTm: info.showTm,
+    multiMovieYn: info.multiMovieYn,
+    genres,
+    directors,
+    actors,
+    posterInfo,
+  }
+}
+
+// 검색어로 KOBIS 영화 정보 호출
+export const searchMovieByTitle = async (title: string) => {
+  const url = buildKobisUrl('movie/searchMovieList.json', {
+    movieNm: title,
+  });
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return data.movieListResult.movieList;
+};

@@ -11,8 +11,8 @@ const posterInfoCache = new Map<string, PosterInfo>();
 
 // TMDB에서 포스터 URL과 개요 검색 (캐시 사용)
 export async function fetchPosterInfo(
-  title: string,
-  year?: string
+  title: string, // 영화제목
+  year?: string  // 개봉년도
 ): Promise<PosterInfo> {
   const cacheKey = year ? `${title}_${year}` : title;
   if (posterInfoCache.has(cacheKey)) {
