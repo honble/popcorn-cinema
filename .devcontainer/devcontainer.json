@@ -1,10 +1,13 @@
 // .devcontainer/devcontainer.json
 {
   "name": "popcorn-cinema (Next.js + npm)",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+  "dockerComposeFile": ["./docker-compose.yml"], // 같은 폴더 안에 위치
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "remoteUser": "node",
+  "postCreateCommand": "npm install",
+  "forwardPorts": [3000],
   "settings": {
     "terminal.integrated.defaultProfile.linux": "bash"
   },
@@ -32,10 +35,5 @@
 
     // **UI/테마**
     "KacperBiedka.one-candy-dark" // One Candy Dark 테마
-  ],
-  "forwardPorts": [3000],
-  "postCreateCommand": "npm install",
-  "remoteUser": "node",
-  "workspaceFolder": "/workspace",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
+  ]
 }

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: cinema-dev
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    networks:
+      - cinema-net
+    depends_on:
+      - db
+    env_file:
+      - ../.env
+
+  db:
+    image: mariadb:10.5
+    container_name: cinema-db
+    restart: always
+    env_file:
+      - ../.env
+    ports:
+      - '3307:3306'
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - cinema-net
+
+volumes:
+  mariadb_data:
+
+networks:
+  cinema-net:
